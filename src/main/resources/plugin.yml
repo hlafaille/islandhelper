@@ -1,0 +1,11 @@
+name: IslandHelper
+version: '${project.version}'
+main: me.docxbox.islandhelper.IslandHelper
+api-version: 1.19
+prefix: ISLANDHELPER
+authors: [ d0cx ]
+description: An extension for BSkyBlock, allows players to go to a resource gathering world for a predefined amount of time.
+website: https://github.com/hlafaille
+commands:
+  mainland:
+    description: Takes the player to the default world for a few in-game days.
