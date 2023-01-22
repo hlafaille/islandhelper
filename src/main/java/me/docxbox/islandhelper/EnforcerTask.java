@@ -58,7 +58,7 @@ public class EnforcerTask extends BukkitRunnable {
         } else {
             long remainingTimeInTicks = getMainlandGameTime() - beginMainlandTicks;
             double remainingTime = (double) remainingTimeInTicks / 24000;
-            player.sendMessage(ChatColor.YELLOW + "You have " + Math.round(remainingTime) + " in game days left in the mainland.");
+            player.sendMessage(ChatColor.YELLOW + "You have " + String.format("%.2f", remainingTime) + " in game days left in the mainland.");
         }
     }
 
