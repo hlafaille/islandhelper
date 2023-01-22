@@ -27,7 +27,7 @@ public final class IslandHelper extends JavaPlugin {
         new EnforcerListener(this);
 
         // set world variables
-        mainland_world = Bukkit.getWorld("world");
+        mainland_world = Bukkit.getWorld(getConfig().getString("mainlandWorld"));
         mainland_location = new Location(
                 mainland_world,
                 mainland_world.getSpawnLocation().getX(),

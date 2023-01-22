@@ -1,2 +1,5 @@
 # Need a database? I recommend a free Supabase instance. Probably really overkill, but it's easy to use!
 jdbcConnectionUrl: "CONNECTION_STRING_HERE"
+
+# World to use as mainland
+mainlandWorld: "world"
