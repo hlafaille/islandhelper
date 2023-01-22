@@ -67,7 +67,7 @@ public final class IslandHelper extends JavaPlugin {
                     }
                 }
             } catch (SQLException e) {
-                this.getLogger().severe(e.getMessage());
+                e.printStackTrace();
             }
 
             p.teleport(mainland_location);
