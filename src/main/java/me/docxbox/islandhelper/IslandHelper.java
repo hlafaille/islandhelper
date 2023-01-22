@@ -11,8 +11,8 @@ import java.sql.*;
 public final class IslandHelper extends JavaPlugin {
 
     // mainland world information
-    private World mainland_world = null;
-    private Location mainland_location = null;
+    public World mainland_world = null;
+    public Location mainland_location = null;
 
     // database objects
     public final PostgreSQL db = new PostgreSQL();

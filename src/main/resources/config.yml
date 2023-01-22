@@ -3,3 +3,9 @@ jdbcConnectionUrl: "CONNECTION_STRING_HERE"
 
 # World to use as mainland
 mainlandWorld: "world"
+
+# Maximum permitted time in mainland (in ticks, one Minecraft day = 24000 ticks) - default = 120000
+maximumMainlandTime: 120000
+
+# Command to return to the players island
+islandCommand: "island"
