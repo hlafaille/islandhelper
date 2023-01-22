@@ -1,5 +1,6 @@
 package me.docxbox.islandhelper;
 
+import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 
@@ -23,6 +24,7 @@ public class EnforcerTask extends BukkitRunnable {
     public void run() {
         // if the player is in the mainland world, enforce their state
         if (player.getWorld().getName().equals(plugin.getConfig().getString("mainlandWorld"))){
+            player.sendMessage(ChatColor.RED + "Checking if you gotta go...");
             String getCooldowns = "SELECT mainland_days_remaining FROM player_cooldowns WHERE player_uuid=?";
 
             try {
