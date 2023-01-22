@@ -2,6 +2,7 @@ package me.docxbox.util;
 
 import me.docxbox.islandhelper.IslandHelper;
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 
@@ -11,13 +12,14 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 public class MainlandHandler {
-    // constructor variables
+    // plugin & player
     private final IslandHelper plugin;
     private final Player player;
 
-    // config variables
+    // variables from config.yml
     private final String configMainlandWorld;
     private final long configMaximumMainlandTime;
+    private final long configMainlandCooldownTime;
     private final String configIslandCommand;
 
     // constructor
@@ -26,12 +28,18 @@ public class MainlandHandler {
         this.player = player;
         this.configMainlandWorld = this.plugin.getConfig().getString("mainlandWorld");
         this.configMaximumMainlandTime = this.plugin.getConfig().getLong("maximumMainlandTime");
+        this.configMainlandCooldownTime = this.plugin.getConfig().getLong("mainlandCooldownTime");
         this.configIslandCommand = this.plugin.getConfig().getString("islandCommand");
     }
 
     // returns the craftbukkit World object for the Mainland
     public World getMainlandWorld() {
         return plugin.getServer().getWorld(configMainlandWorld);
+    }
+
+    // returns the spawn point of the mainland
+    public Location getMainlandSpawnLocation() {
+        return getMainlandWorld().getSpawnLocation();
     }
 
     // returns if the player is in the mainland
@@ -50,7 +58,12 @@ public class MainlandHandler {
         PreparedStatement getMainlandBeginTicksStatement = plugin.connection.prepareStatement(getMainlandBeginTicks, Statement.RETURN_GENERATED_KEYS);
         getMainlandBeginTicksStatement.setString(1, player.getUniqueId().toString());
         ResultSet mainlandTicks = getMainlandBeginTicksStatement.executeQuery();
-        return mainlandTicks.getLong("begin_ml_ticks");
+
+        long beginMainlandTicks = 0;
+        while (mainlandTicks.next()){
+            beginMainlandTicks = mainlandTicks.getLong("begin_ml_ticks");
+        }
+        return beginMainlandTicks;
     }
 
     // returns the time at which the player should leave the mainland
@@ -58,9 +71,33 @@ public class MainlandHandler {
         return getPlayerMainlandBeginTime() + configMaximumMainlandTime;
     }
 
+    // returns the players remaining mainland time
+    public long getPlayerMainlandRemainingTime() throws SQLException {
+         return getPlayerMainlandEndTime() - getMainlandTimeSinceCreation();
+    }
+
     // returns if the player is over their allowed time in the mainland
     public boolean isPlayerOverAllowedMainlandTime() throws SQLException {
-        return getPlayerMainlandBeginTime() + getPlayerMainlandEndTime() <= getMainlandTimeSinceCreation();
+        return getPlayerMainlandBeginTime() + configMaximumMainlandTime <= getMainlandTimeSinceCreation();
+    }
+
+    // returns if the player is within their cooldown
+    public boolean isPlayerWithinMainlandCooldown() throws SQLException {
+        // check if this method is being called while the player still has active time in the mainland
+        if (! isPlayerOverAllowedMainlandTime()){
+            return false;
+        }
+        // if the current time is greater than the players mainland end time + the cooldown
+        if (getMainlandTimeSinceCreation() >= getPlayerMainlandEndTime() + configMainlandCooldownTime){
+            return false;
+        } else {
+            return true;
+        }
+    }
+
+    // returns the remaining players mainland cooldown in ticks
+    public long getRemainingMainlandCooldownTime() throws SQLException {
+        return (getPlayerMainlandEndTime() + configMainlandCooldownTime) - getMainlandTimeSinceCreation();
     }
 
     // records the players coordinates & calls the Skyblock home command
@@ -90,13 +127,42 @@ public class MainlandHandler {
     }
 
     // records the players entry to the mainland
-    public void recordMainlandEntry() throws SQLException{
-        String createCooldown = "INSERT INTO player_cooldowns (player_uuid, begin_ml_ticks) VALUES (?, ?)";
+    public void recordMainlandEntry() throws SQLException {
+        String createCooldown = """
+                INSERT INTO player_cooldowns (player_uuid, begin_ml_ticks) VALUES (?, ?)
+                ON CONFLICT (player_uuid)
+                DO UPDATE SET begin_ml_ticks=?
+                """;
         PreparedStatement createCooldownStatement = plugin.connection.prepareStatement(createCooldown, Statement.RETURN_GENERATED_KEYS);
         createCooldownStatement.setString(1, player.getUniqueId().toString());
         createCooldownStatement.setLong(2, getMainlandTimeSinceCreation());
+        createCooldownStatement.setLong(3, getMainlandTimeSinceCreation());
         createCooldownStatement.executeUpdate();
-
     }
+
+    // returns the players last known coordinates from the mainland
+    public Location getRecordedPlayerMainlandLocation() throws SQLException {
+        Location previousLocation = null;
+
+        // get players last main world X,Y,Z from the database
+        String getCoordinates = "SELECT mainland_x, mainland_y, mainland_z FROM player_locations WHERE player_uuid=?";
+        PreparedStatement getCoordinatesStatement = plugin.connection.prepareStatement(getCoordinates, Statement.RETURN_GENERATED_KEYS);
+        getCoordinatesStatement.setString(1, player.getUniqueId().toString());
+        ResultSet rs = getCoordinatesStatement.executeQuery();
+
+        // if there's no player coordinates in the mainland, get the mainland spawn
+        if (rs.getRow() <= 0){
+            previousLocation = getMainlandSpawnLocation();
+        }
+
+        while (rs.next()){
+                double mainland_x = rs.getDouble("mainland_x");
+                double mainland_y = rs.getDouble("mainland_y");
+                double mainland_z = rs.getDouble("mainland_z");
+                previousLocation = new Location(getMainlandWorld(), mainland_x, mainland_y, mainland_z);
+        }
+        return previousLocation;
+    }
+
 
 }

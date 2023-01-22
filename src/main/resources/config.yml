@@ -7,5 +7,8 @@ mainlandWorld: "world"
 # Maximum permitted time in mainland (in ticks, one Minecraft day = 24000 ticks) - default = 120000
 maximumMainlandTime: 120000
 
+# Amount of time before the player is allowed back in to the mainland
+mainlandCooldownTime: 120000
+
 # Command to return to the players island
 islandCommand: "island"

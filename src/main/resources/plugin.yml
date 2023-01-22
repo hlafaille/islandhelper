@@ -8,4 +8,6 @@ description: An extension for BSkyBlock, allows players to go to a resource gath
 website: https://github.com/hlafaille
 commands:
   mainland:
-    description: Takes the player to the default world for a few in-game days.
+    description: Takes the player to the default world for a few in-game days
+  remaining:
+    description: The remaining time in minutes that the player has in the mainland

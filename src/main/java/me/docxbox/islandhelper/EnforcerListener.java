@@ -15,7 +15,7 @@ public class EnforcerListener implements Listener {
 
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
-        // Run the world enforcer task for this player each Minecraft day (20 IRL minutes)
-        BukkitTask task = new EnforcerTask(this.plugin, event.getPlayer()).runTaskTimer(this.plugin, 0L, 3000L);
+        // Run the world enforcer task for this player each Minecraft day (10 IRL minutes)
+        BukkitTask task = new EnforcerTask(this.plugin, event.getPlayer()).runTaskTimer(this.plugin, 0L, 1200L);
     }
 }
