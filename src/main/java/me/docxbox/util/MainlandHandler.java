@@ -1,9 +1,7 @@
 package me.docxbox.util;
 
 import me.docxbox.islandhelper.IslandHelper;
-import org.bukkit.ChatColor;
-import org.bukkit.Location;
-import org.bukkit.World;
+import org.bukkit.*;
 import org.bukkit.entity.Player;
 
 import java.sql.PreparedStatement;
@@ -103,6 +101,8 @@ public class MainlandHandler {
     // records the players coordinates & calls the Skyblock home command
     public void removePlayerFromMainland() throws SQLException {
         recordMainlandCoordinates();
+        getMainlandWorld().playSound(player.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 10, 1);
+        getMainlandWorld().playEffect(player.getLocation(), Effect.MOBSPAWNER_FLAMES, 0);
         player.performCommand(configIslandCommand);
     }
 
