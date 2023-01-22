@@ -70,7 +70,8 @@ public final class IslandHelper extends JavaPlugin {
                 e.printStackTrace();
             }
 
-            p.teleport(mainland_location);
+            // teleport, play some fancy effects
+            p.teleport(prev_location);
             mainland_world.playSound(p.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 10, 1);
             mainland_world.playEffect(p.getLocation(), Effect.MOBSPAWNER_FLAMES, 0);
         }
