@@ -78,6 +78,8 @@ public final class IslandHelper extends JavaPlugin {
                 return false;
             }
 
+            // create cooldown record
+
             // teleport, play some fancy effects
             p.teleport(prev_location);
             mainland_world.playSound(p.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 10, 1);

@@ -1,5 +1,7 @@
 package me.docxbox.islandhelper;
 
+import com.sun.tools.javac.Main;
+import me.docxbox.util.MainlandHandler;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -15,10 +17,12 @@ public class EnforcerTask extends BukkitRunnable {
     private final IslandHelper plugin;
     private final Player player;
     private final Integer gameTime = null;
+    private final MainlandHandler handler;
 
     public EnforcerTask(IslandHelper plugin, Player player) {
         this.plugin = plugin;
         this.player = player;
+        this.handler = new MainlandHandler(plugin, player);
     }
 
     // returns the current game time
@@ -42,44 +46,59 @@ public class EnforcerTask extends BukkitRunnable {
 
     // records the players current coordinates
     public void recordCurrentCoordinates(){
+        String recordMainlandCoords = """
+                INSERT INTO player_locations (player_uuid, mainland_x, mainland_y, mainland_z) VALUES (?, ?, ?, ?)
+                ON CONFLICT (player_uuid)
+                DO UPDATE SET mainland_x=?,
+                mainland_y=?,
+                mainland_z=?
+                """;
+
+        try {
+            PreparedStatement recordMainlandCoordsStatement = plugin.connection.prepareStatement(recordMainlandCoords, Statement.RETURN_GENERATED_KEYS);
+            recordMainlandCoordsStatement.setString(1, player.getUniqueId().toString());
+            recordMainlandCoordsStatement.setDouble(2, player.getLocation().getX());
+            recordMainlandCoordsStatement.setDouble(3, player.getLocation().getY());
+            recordMainlandCoordsStatement.setDouble(4, player.getLocation().getZ());
+            recordMainlandCoordsStatement.setDouble(5, player.getLocation().getX());
+            recordMainlandCoordsStatement.setDouble(6, player.getLocation().getY());
+            recordMainlandCoordsStatement.setDouble(7, player.getLocation().getZ());
+            recordMainlandCoordsStatement.executeUpdate();
+        } catch (SQLException e){
+            e.printStackTrace();
+        }
+
     }
 
     // removes the player from the mainland
     public void removeFromMainland(){
+        recordCurrentCoordinates();
         player.sendMessage(ChatColor.RED + "Time's up buddy, time to go home!");
+        player.performCommand(plugin.getConfig().getString("islandCommand"));
     }
 
     // enforces the players ability to be in the mainland
     public void enforceMainlandPresence(long beginMainlandTicks) {
+        // point at which the player should be kicked out
+        long kickoutTime = beginMainlandTicks + plugin.getConfig().getLong("maximumMainlandTime");
+
         // if the player is over their maximum allowed time in the mainland
-        if (beginMainlandTicks + plugin.getConfig().getInt("maximumMainlandTime") <= getMainlandGameTime()) {
-            recordCurrentCoordinates();
+        if (kickoutTime <= getMainlandGameTime()) {
             removeFromMainland();
         } else {
-            long remainingTimeInTicks = getMainlandGameTime() - beginMainlandTicks;
-            double remainingTime = (double) remainingTimeInTicks / 24000;
-            player.sendMessage(ChatColor.YELLOW + "You have " + String.format("%.2f", remainingTime) + " in game days left in the mainland.");
+            double remainingTime = ((double) kickoutTime - (double) getMainlandGameTime()) / 1200;
+            player.sendMessage(ChatColor.YELLOW + "You have " + String.format("%.2f", remainingTime) + " minutes left in the mainland.");
         }
     }
 
     @Override
     public void run() {
         // if the player is in the mainland world, enforce their state
-        if (player.getWorld().getName().equals(plugin.mainland_world.getName())){
-            // get the game time from when this player entered the mainland
-            String getMainlandBeginTicks = "SELECT begin_ml_ticks FROM player_cooldowns WHERE player_uuid=?";
+        if (handler.isPlayerInMainland()) {
+            // if the player is over their allowed mainland time
             try {
-                PreparedStatement getMainlandBeginTicksStatement = plugin.connection.prepareStatement(getMainlandBeginTicks, Statement.RETURN_GENERATED_KEYS);
-                getMainlandBeginTicksStatement.setString(1, player.getUniqueId().toString());
-                ResultSet mainlandTicks = getMainlandBeginTicksStatement.executeQuery();
+                if (handler.isPlayerOverAllowedMainlandTime()){
 
-                // if there's no record for when this player entered the mainland, create it
-                while (mainlandTicks.next()) {
-                    if (mainlandTicks.getRow() <= 0) {
-                        createCooldownRecord();
-                    } else {
-                        enforceMainlandPresence(mainlandTicks.getLong("begin_ml_ticks"));
-                    }
                 }
             } catch (SQLException e) {
                 e.printStackTrace();
