@@ -11,13 +11,8 @@ import java.sql.*;
 public final class IslandHelper extends JavaPlugin {
 
     // mainland world information
-    private final World mainland_world = Bukkit.getWorld("world");
-    private final Location mainland_location = new Location(
-            mainland_world,
-            mainland_world.getSpawnLocation().getX(),
-            mainland_world.getSpawnLocation().getY(),
-            mainland_world.getSpawnLocation().getZ()
-    );
+    private World mainland_world = null;
+    private Location mainland_location = null;
 
     // database objects
     public final PostgreSQL db = new PostgreSQL();
@@ -27,6 +22,18 @@ public final class IslandHelper extends JavaPlugin {
     public void onEnable() {
         this.saveDefaultConfig();
         connection = db.connect(this);
+
+        // create the world enforcer event listener
+        new EnforcerListener(this);
+
+        // set world variables
+        mainland_world = Bukkit.getWorld("world");
+        mainland_location = new Location(
+                mainland_world,
+                mainland_world.getSpawnLocation().getX(),
+                mainland_world.getSpawnLocation().getY(),
+                mainland_world.getSpawnLocation().getZ()
+        );
     }
 
     @Override
@@ -55,19 +62,20 @@ public final class IslandHelper extends JavaPlugin {
                 PreparedStatement statement = connection.prepareStatement(getCoordinates, Statement.RETURN_GENERATED_KEYS);
                 statement.setString(1, p.getUniqueId().toString());
                 ResultSet rs = statement.executeQuery();
+
+                // if there's no rows, set prev_location to world spawn. else, set prev_location to the coordinates from the database
+                if (rs.getRow() <= 0) {
+                    prev_location = mainland_location;
+                }
                 while (rs.next()) {
-                    // if there's no rows, set prev_location to world spawn. else, set prev_location to the coordinates from the database
-                    if (rs.getRow() <= 0){
-                        prev_location = mainland_location;
-                    } else {
-                        double mainland_x = rs.getDouble("mainland_x");
-                        double mainland_y = rs.getDouble("mainland_y");
-                        double mainland_z = rs.getDouble("mainland_z");
-                        prev_location = new Location(mainland_world, mainland_x, mainland_y, mainland_z);
-                    }
+                    double mainland_x = rs.getDouble("mainland_x");
+                    double mainland_y = rs.getDouble("mainland_y");
+                    double mainland_z = rs.getDouble("mainland_z");
+                    prev_location = new Location(mainland_world, mainland_x, mainland_y, mainland_z);
                 }
             } catch (SQLException e) {
                 e.printStackTrace();
+                return false;
             }
 
             // teleport, play some fancy effects
@@ -76,11 +84,5 @@ public final class IslandHelper extends JavaPlugin {
             mainland_world.playEffect(p.getLocation(), Effect.MOBSPAWNER_FLAMES, 0);
         }
         return true;
-
-        /*
-        if (command.getName().equalsIgnoreCase("return") && sender instanceof Player){
-
-        }
-         */
     }
 }
