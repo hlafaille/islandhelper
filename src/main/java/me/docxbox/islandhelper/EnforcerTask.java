@@ -56,7 +56,7 @@ public class EnforcerTask extends BukkitRunnable {
             recordCurrentCoordinates();
             removeFromMainland();
         } else {
-            long remainingTicks = (beginMainlandTicks + plugin.getConfig().getInt("maximumMainlandTime")) / 20;
+            long remainingTicks = (beginMainlandTicks + plugin.getConfig().getInt("maximumMainlandTime")) / 24000;
             player.sendMessage(ChatColor.YELLOW + "You have " + remainingTicks + " in game days left in the mainland");
         }
     }
